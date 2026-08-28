@@ -32,7 +32,8 @@ let branchList=[];
 const adminClient=window.MENU_CONFIG&&window.supabase?.createClient?window.supabase.createClient(window.MENU_CONFIG.supabaseUrl,window.MENU_CONFIG.supabaseAnonKey):null;
 
 function publicUrl(){
-  return `${location.origin}${location.pathname.replace(/admin\.html.*/,'index.html')}?tenant=${encodeURIComponent(tenant)}&branch=${encodeURIComponent(selectedBranchSlug)}`;
+  const base=location.origin+location.pathname.replace(/admin\.html.*/,'');
+  return `${base}index.html?tenant=${encodeURIComponent(tenant)}&branch=${encodeURIComponent(selectedBranchSlug)}`;
 }
 
 function setLiveMode(on){
@@ -191,7 +192,7 @@ async function toggleAvailability(id){
   const next=!(item.available!==false);
   item.available=next;
   if(isLive&&adminClient&&liveTenantId&&liveUser){
-    const r=await adminClient.from('products').update({is_available:next}).eq('id',id).eq('tenant_id',liveTenantId);
+    const r=await adminClient.from('products').update({is_available:next}).eq('id',id).select('id,is_available').limit(1).maybeSingle();
     if(r.error){
       item.available=!next;
       authUi(liveUser,'تعذر تحديث التوفر: '+r.error.message);
@@ -210,7 +211,7 @@ function removeItem(id){
   const s=state();
   s.items=s.items.filter(i=>i.id!==id);
   if(isLive&&adminClient&&liveTenantId&&liveUser){
-    adminClient.from('products').delete().eq('id',id).eq('tenant_id',liveTenantId).then(r=>{
+    adminClient.from('products').delete().eq('id',id).then(r=>{
       if(r.error)authUi(liveUser,'فشل الحذف: '+r.error.message);
       else authUi(liveUser,'تم حذف الصنف');
     });
