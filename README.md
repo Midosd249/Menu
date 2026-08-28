@@ -63,3 +63,17 @@ Remaining owner actions are limited to creating/authorizing real admin users, ad
 [1]: https://www.facebook.com/almasfamilyrestaurantksa/ "AL MAS Family Restaurant — Facebook"
 [2]: https://www.instagram.com/almas_family_restaurant/?hl=en "AL MAS Restaurant — Instagram"
 [3]: https://www.tripadvisor.com/Restaurant_Review-g293995-d9883951-Reviews-Al_Mas_Restaurant-Riyadh_Riyadh_Province.html "Al Mas Restaurant — Tripadvisor"
+
+## Alsakhrah Restaurants portfolio tenant
+
+The second restaurant case study is available at `index.html?tenant=alsakhrah&branch=malaz`. It is implemented as an independent tenant and does not alter or replace the existing AL MAS Family Restaurant tenant, which remains available at `index.html?tenant=almas&branch=malaz`.
+
+Public-source research confirmed a public Alsakhrah/مطاعم الصخره identity and Al Malaz presence through the [Facebook page][4] and [Instagram profile][5]. The public KSA Restaurant listing also exposes a Riyadh/Al Dubbat listing with a Turkish category, a 90 SAR price-range label, a landline lead, family/single sections, and Sat–Fri 12 PM–12 AM hours.[6] Because these listing details may be stale or conflict with the social profile, the implementation deliberately does not present them as canonical final restaurant data.
+
+The public Facebook page names **عش البلبل الحموي** and **برك اللحمه** in a 2018 post; these are the only menu item names transcribed into the prototype.[4] Their descriptions, prices, images, exact category, and current availability remain unverified and therefore render as **السعر حسب الطلب / Price on request**. No unverified logo, rating, opening hours, or phone number is presented as final. The supplied address lead and `011 476 6609` contact are included in the prototype route as research leads and require owner confirmation; public social/listing sources expose conflicting contact numbers.
+
+The reproducible database fixture is [`alsakhrah-seed.sql`](alsakhrah-seed.sql), and the complete provenance log is [`ALSAKHRAH_research.md`](ALSAKHRAH_research.md). The seed uses the existing Supabase tables, RLS, Auth, and Storage model and creates the independent `alsakhrah` tenant with the `malaz` branch. The admin selector includes Alsakhrah separately from AL MAS.
+
+[4]: https://www.facebook.com/alsakhrahrestaurant/?locale=en_US "مطاعم الصخره — Facebook"
+[5]: https://www.instagram.com/al_sakhrah_rest/ "مطاعم الصخره — Instagram"
+[6]: https://ksarestaurant.com/en/listing/riyadh/al-sakhrah "Al Sakhrah — KSARestaurant"
