@@ -92,6 +92,19 @@ alter table public.menu_events enable row level security;
 
 -- Public menu reads are scoped to active/published content. Dashboard writes are membership-scoped.
 create or replace function public.is_tenant_member(target_tenant uuid) returns boolean language sql stable security definer set search_path = public as $$ select exists(select 1 from public.tenant_members tm where tm.tenant_id = target_tenant and tm.user_id = auth.uid()); $$;
+drop policy if exists "public can read active tenants" on public.tenants;
+drop policy if exists "public can read active branches" on public.branches;
+drop policy if exists "public can read active categories" on public.categories;
+drop policy if exists "public can read available products" on public.products;
+drop policy if exists "members can manage own tenants" on public.tenants;
+drop policy if exists "members can manage own branches" on public.branches;
+drop policy if exists "members can manage own categories" on public.categories;
+drop policy if exists "members can manage own products" on public.products;
+drop policy if exists "members can read memberships" on public.tenant_members;
+drop policy if exists "members can read branch hours" on public.branch_hours;
+drop policy if exists "members can manage branch hours" on public.branch_hours;
+drop policy if exists "public can record menu events" on public.menu_events;
+drop policy if exists "members can read own analytics" on public.menu_events;
 create policy "public can read active tenants" on public.tenants for select using (true);
 create policy "public can read active branches" on public.branches for select using (is_active = true);
 create policy "public can read active categories" on public.categories for select using (is_active = true);
