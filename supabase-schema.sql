@@ -9,6 +9,8 @@ create table if not exists public.tenants (
   logo_url text,
   instagram_url text,
   whatsapp text,
+  primary_color text not null default '#15120f',
+  secondary_color text not null default '#a26a42',
   created_at timestamptz not null default now()
 );
 
@@ -91,7 +93,6 @@ alter table public.branch_hours enable row level security;
 alter table public.menu_events enable row level security;
 
 -- Public menu reads are scoped to active/published content. Dashboard writes are membership-scoped.
-create or replace function public.is_tenant_member(target_tenant uuid) returns boolean language sql stable security definer set search_path = public as $$ select exists(select 1 from public.tenant_members tm where tm.tenant_id = target_tenant and tm.user_id = auth.uid()); $$;
 drop policy if exists "public can read active tenants" on public.tenants;
 drop policy if exists "public can read active branches" on public.branches;
 drop policy if exists "public can read active categories" on public.categories;
@@ -109,15 +110,16 @@ create policy "public can read active tenants" on public.tenants for select usin
 create policy "public can read active branches" on public.branches for select using (is_active = true);
 create policy "public can read active categories" on public.categories for select using (is_active = true);
 create policy "public can read available products" on public.products for select using (is_available = true);
-create policy "members can manage own tenants" on public.tenants for all using (public.is_tenant_member(id)) with check (public.is_tenant_member(id));
-create policy "members can manage own branches" on public.branches for all using (public.is_tenant_member(tenant_id)) with check (public.is_tenant_member(tenant_id));
-create policy "members can manage own categories" on public.categories for all using (public.is_tenant_member(tenant_id)) with check (public.is_tenant_member(tenant_id));
-create policy "members can manage own products" on public.products for all using (public.is_tenant_member(tenant_id)) with check (public.is_tenant_member(tenant_id));
-create policy "members can read memberships" on public.tenant_members for select using (user_id = auth.uid() or public.is_tenant_member(tenant_id));
-create policy "members can read branch hours" on public.branch_hours for select using (exists(select 1 from public.branches b where b.id = branch_id and public.is_tenant_member(b.tenant_id)));
-create policy "members can manage branch hours" on public.branch_hours for all using (exists(select 1 from public.branches b where b.id = branch_id and public.is_tenant_member(b.tenant_id))) with check (exists(select 1 from public.branches b where b.id = branch_id and public.is_tenant_member(b.tenant_id)));
+create policy "members can manage own tenants" on public.tenants for all using (exists(select 1 from public.tenant_members tm where tm.tenant_id = id and tm.user_id = auth.uid())) with check (exists(select 1 from public.tenant_members tm where tm.tenant_id = id and tm.user_id = auth.uid()));
+create policy "members can manage own branches" on public.branches for all using (exists(select 1 from public.tenant_members tm where tm.tenant_id = tenant_id and tm.user_id = auth.uid())) with check (exists(select 1 from public.tenant_members tm where tm.tenant_id = tenant_id and tm.user_id = auth.uid()));
+create policy "members can manage own categories" on public.categories for all using (exists(select 1 from public.tenant_members tm where tm.tenant_id = tenant_id and tm.user_id = auth.uid())) with check (exists(select 1 from public.tenant_members tm where tm.tenant_id = tenant_id and tm.user_id = auth.uid()));
+create policy "members can manage own products" on public.products for all using (exists(select 1 from public.tenant_members tm where tm.tenant_id = tenant_id and tm.user_id = auth.uid())) with check (exists(select 1 from public.tenant_members tm where tm.tenant_id = tenant_id and tm.user_id = auth.uid()));
+create policy "members can read memberships" on public.tenant_members for select using (user_id = auth.uid());
+create policy "members can read branch hours" on public.branch_hours for select using (exists(select 1 from public.branches b join public.tenant_members tm on tm.tenant_id=b.tenant_id where b.id=branch_id and tm.user_id=auth.uid()));
+create policy "members can manage branch hours" on public.branch_hours for all using (exists(select 1 from public.branches b join public.tenant_members tm on tm.tenant_id=b.tenant_id where b.id=branch_id and tm.user_id=auth.uid())) with check (exists(select 1 from public.branches b join public.tenant_members tm on tm.tenant_id=b.tenant_id where b.id=branch_id and tm.user_id=auth.uid()));
 create policy "public can record menu events" on public.menu_events for insert with check (event_type in ('visit','product_view'));
-create policy "members can read own analytics" on public.menu_events for select using (public.is_tenant_member(tenant_id));
+create policy "members can read own analytics" on public.menu_events for select using (exists(select 1 from public.tenant_members tm where tm.tenant_id=tenant_id and tm.user_id=auth.uid()));
+insert into storage.buckets (id, name, public) values ('menu-assets','menu-assets',true) on conflict (id) do nothing;
 insert into public.tenants (slug, name, tagline, instagram_url, whatsapp) values
 ('oaza', 'Oaza Coffee', 'Demo portfolio tenant — قهوة مختصة • الرياض', 'https://instagram.com/oaza.ksa', '+966566332329'),
 ('juniper', 'Juniper Roasters', 'Demo portfolio tenant — تحميص محلي', null, null),
