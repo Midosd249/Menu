@@ -77,3 +77,22 @@ The reproducible database fixture is [`alsakhrah-seed.sql`](alsakhrah-seed.sql),
 [4]: https://www.facebook.com/alsakhrahrestaurant/?locale=en_US "مطاعم الصخره — Facebook"
 [5]: https://www.instagram.com/al_sakhrah_rest/ "مطاعم الصخره — Instagram"
 [6]: https://ksarestaurant.com/en/listing/riyadh/al-sakhrah "Al Sakhrah — KSARestaurant"
+
+## Final commercial QA pass
+
+The current sales-demo scope contains exactly two independent restaurant case studies:
+
+| Tenant | Public demo URL | Branch |
+|---|---|---|
+| AL MAS Family Restaurant | `index.html?tenant=almas&branch=malaz` | `malaz` |
+| Alsakhrah Restaurants | `index.html?tenant=alsakhrah&branch=malaz` | `malaz` |
+
+The public first render is intentionally local-first and non-blocking: the premium Arabic/RTL fixture renders immediately, then Supabase hydrates the selected tenant, branch, active categories, and available products. If Supabase is unavailable, the customer continues to receive the local case-study experience rather than a blank page. Search, category filtering, item detail, unavailable states, price-on-request states, branch actions, phone/location actions, language switching, empty states, modal escape behavior, responsive cards, and QR-friendly deep links were regression-tested for both case studies.
+
+The admin entry point is `admin.html`. It supports Supabase email/password Auth, tenant membership loading, tenant-scoped data, branch selection, brand colors, logo URL, restaurant links, product CRUD, availability, featured flags, image upload to `menu-assets`, and QR canvas rendering plus PNG download. Once authenticated, the selector is restricted to the tenant identified by the user’s `tenant_members` row; unauthenticated visitors can inspect the demo but cannot perform management mutations.
+
+The final Supabase security advisor returned `lints: []`. The Menu-specific database performance changes add covering indexes for foreign keys and replace row-by-row `auth.uid()` evaluation with `(select auth.uid())`; broad split write policies prevent overlapping permissive SELECT policies while preserving tenant isolation. Remaining performance-advisor findings are limited to unrelated pre-existing `resume_workspaces` objects and low-usage informational indexes in the shared Supabase project, not the Menu authorization model.
+
+### Commercial deployment checklist
+
+Before selling this as a live restaurant service, create one Supabase Auth user per owner, insert only the matching `tenant_members` row for that owner, confirm the owner’s official brand/contact/menu content, replace research leads with approved values, upload approved logo and food photography, verify Storage bucket and CDN behavior, connect the production domain, add permanent redirect/rewrites for `/branch/{slug}`, replace demo hostname/query routing with server- or edge-level tenant resolution, configure monitoring and backups, and test login and updates with a real owner account. The current static deployment is a polished, connected MVP and sales case study; it is not a substitute for the owner-confirmation and domain/onboarding steps above.
