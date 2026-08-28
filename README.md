@@ -118,3 +118,25 @@ A final live policy review corrected the authenticated branch, category, product
 A complete authenticated two-user staging test was not run because the available Supabase connector exposes database/project operations but no Auth-admin user creation operation, and no temporary credentials were supplied. No fake or production credentials were used. The full matrix and evidence are in [`final_auth_tenant_isolation_report.md`](final_auth_tenant_isolation_report.md).
 
 The `owner`, `admin`, and `editor` values currently exist as membership roles but are not differentiated by the RLS policies or admin UI; all authenticated members of a tenant receive the same tenant-scoped CRUD capability. Treat this as a launch decision: either implement least-privilege role checks before selling role-sensitive access, or explicitly operate the first onboarding with membership-only permissions.
+
+## MENU V1.1 — Commercial product layer
+
+Implemented on top of the verified security foundation (commit `0402375`):
+
+- **Owner analytics dashboard** (7/30 day ranges): visits, product views, top products, category and branch performance, language split via `get_owner_analytics` RPC (membership-scoped).
+- **One-click product availability** toggle that updates live `products.is_available` under existing RLS.
+- **WhatsApp product deep links** with configurable Arabic message template on the public item modal.
+- **Branch-specific QR** generation and PNG download with clear branch labeling.
+- **Premium branding controls**: logo, cover/hero image, primary/secondary colors, WhatsApp, Instagram.
+- **Menu Health score** with actionable checklist.
+- **Onboarding checklist** for non-technical restaurant owners.
+- **Strict live / demo separation**: authenticated owners operate only against live Supabase data; public fallback is clearly labeled.
+
+Apply database changes with:
+
+```bash
+# In Supabase SQL editor
+\i v1_1_commercial_migration.sql
+```
+
+Security invariants preserved: public menu remains RPC-only, tenant isolation via RLS + membership, Storage path isolation, validated analytics events.
