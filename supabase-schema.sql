@@ -125,3 +125,15 @@ insert into public.tenants (slug, name, tagline, instagram_url, whatsapp) values
 ('juniper', 'Juniper Roasters', 'Demo portfolio tenant — تحميص محلي', null, null),
 ('mirage', 'Mirage Kitchen', 'Demo portfolio tenant — نكهات سعودية', null, null)
 on conflict (slug) do nothing;
+
+-- Storage policies: public image reads; authenticated members can only manage paths prefixed by their tenant UUID.
+drop policy if exists "public read menu assets" on storage.objects;
+drop policy if exists "members upload menu assets" on storage.objects;
+drop policy if exists "members update menu assets" on storage.objects;
+drop policy if exists "members delete menu assets" on storage.objects;
+create policy "public read menu assets" on storage.objects for select using (bucket_id = 'menu-assets');
+create policy "members upload menu assets" on storage.objects for insert to authenticated with check (bucket_id = 'menu-assets' and exists (select 1 from public.tenant_members tm where tm.user_id = auth.uid() and tm.tenant_id::text = split_part(name,'/',1)));
+create policy "members update menu assets" on storage.objects for update to authenticated using (bucket_id = 'menu-assets' and exists (select 1 from public.tenant_members tm where tm.user_id = auth.uid() and tm.tenant_id::text = split_part(name,'/',1))) with check (bucket_id = 'menu-assets' and exists (select 1 from public.tenant_members tm where tm.user_id = auth.uid() and tm.tenant_id::text = split_part(name,'/',1)));
+create policy "members delete menu assets" on storage.objects for delete to authenticated using (bucket_id = 'menu-assets' and exists (select 1 from public.tenant_members tm where tm.user_id = auth.uid() and tm.tenant_id::text = split_part(name,'/',1)));
+
+-- AL MAS portfolio data is reproducible via almas-seed.sql; it intentionally uses price 0 to render "price on request" until confirmed.
