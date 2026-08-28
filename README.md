@@ -96,3 +96,17 @@ The final Supabase security advisor returned `lints: []`. The Menu-specific data
 ### Commercial deployment checklist
 
 Before selling this as a live restaurant service, create one Supabase Auth user per owner, insert only the matching `tenant_members` row for that owner, confirm the owner’s official brand/contact/menu content, replace research leads with approved values, upload approved logo and food photography, verify Storage bucket and CDN behavior, connect the production domain, add permanent redirect/rewrites for `/branch/{slug}`, replace demo hostname/query routing with server- or edge-level tenant resolution, configure monitoring and backups, and test login and updates with a real owner account. The current static deployment is a polished, connected MVP and sales case study; it is not a substitute for the owner-confirmation and domain/onboarding steps above.
+
+## Critical security remediation
+
+The public client no longer reads `tenants`, `branches`, `categories`, or `products` directly. Anonymous access to those base tables is revoked. Public menu data is returned only by the validated `get_public_menu(p_tenant_slug, p_branch_slug)` SECURITY INVOKER RPC, which sets a transaction-local tenant/branch context, resolves the requested active tenant and active branch together, and returns only active categories and available products belonging to that exact tenant. The RPC uses a fixed `search_path`, no dynamic SQL, and grants execute only to the client roles required by the public menu.
+
+Analytics are no longer written through direct anonymous inserts. The client calls `record_public_menu_event(...)`, which validates the event type, tenant slug, active branch ownership, and—for product views—the product tenant, category tenant, active category, product tenant, and availability. Direct `menu_events` insertion is revoked from `anon` and `authenticated`.
+
+Direct anonymous PostgREST verification returned HTTP 401 for base-table reads on `tenants`, `branches`, `categories`, and `products`. Valid public RPC calls returned HTTP 200 for both `almas/malaz` and `alsakhrah/malaz`; invalid `almas/main` and unknown-tenant requests returned a JSON `null` payload. Invalid product analytics returned HTTP 400 with `invalid product`, and a direct anonymous `menu_events` insert returned HTTP 401. This demonstrates database/API enforcement rather than frontend-only filtering.
+
+The committed `supabase-config.js` contains a Supabase publishable/anon key intended for browser use. Repository scanning found no service-role key, private key, or secret-key pattern; no rotation is required for the committed client key. A service-role key must never be placed in this file.
+
+Demo/local mode remains explicitly labeled in the admin page. LocalStorage changes are preview-only; authenticated users with a `tenant_members` row use the live Supabase path, and mutation controls are disabled until authentication. Production onboarding still requires creating the owner account and membership row before any live write can occur.
+
+The direct authenticated cross-tenant mutation scenarios require two real test accounts with memberships. The RLS policies are membership-scoped and were reviewed structurally, but those two scenarios should be rerun in a staging project with non-production credentials during owner onboarding; no test password or account was available to this session.
