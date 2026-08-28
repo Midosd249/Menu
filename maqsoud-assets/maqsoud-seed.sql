@@ -16,10 +16,11 @@ begin
     raise exception 'maqsoud tenant already exists; aborting to avoid duplicates';
   end if;
 
-  insert into public.tenants (id, slug, name, tagline, logo_url, instagram_url, whatsapp, primary_color, secondary_color)
+  insert into public.tenants (id, slug, name, tagline, logo_url, cover_url, instagram_url, whatsapp, primary_color, secondary_color)
   values (
     v_tenant, 'maqsoud', 'مقصود | MAQSOUD', 'شاورما ومأكولات سريعة في الملز',
     'https://menu-app-production.vercel.app/maqsoud-assets/public/maqsoud-logo.webp',
+    'https://menu-app-production.vercel.app/maqsoud-assets/public/maqsoud-hero.webp',
     null, null, '#24110b', '#ef5b22'
   );
 
