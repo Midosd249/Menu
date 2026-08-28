@@ -4,9 +4,9 @@ Menu is a mobile-first Arabic-first digital menu platform for Saudi cafes and re
 
 ## Implemented in this repository
 
-The public experience now supports generic tenant routing through `?tenant=oaza`, `?tenant=juniper`, or `?tenant=mirage`, Arabic/English switching with persisted preference, RTL/LTR layout, branch status, contact/location actions, search across bilingual names and descriptions, sticky horizontal categories, featured items, availability states, VAT messaging, item detail sheets, keyboard escape handling, responsive mobile cards, and polished loading-free local demo rendering. The footer includes an explicit route to the demo admin workspace.
+The public experience now supports generic tenant routing through `?tenant=oaza`, `?tenant=juniper`, or `?tenant=mirage`, plus branch selection through `&branch=main`. It first renders the premium local fixture for fast perceived load, then fetches the selected tenant, active branch, active categories, and available products from Supabase using the browser-safe publishable key. Arabic/English switching, RTL/LTR layout, branch status, contact/location actions, search across bilingual names and descriptions, sticky horizontal categories, featured items, availability states, VAT messaging, item detail sheets, keyboard escape handling, responsive mobile cards, and a graceful fallback remain available.
 
-The admin experience supports tenant selection, tenant-aware public URLs, profile editing, local persistence, product creation/editing/deletion, Arabic and English fields, price validation, availability and featured flags, preview links, basic visit/item metrics placeholders, and QR presentation/copy actions. The QR view is deliberately labeled as a placeholder until a production QR generator or server-side image endpoint is connected.
+The admin experience supports tenant selection, tenant-aware public URLs, Supabase email/password login and logout, membership-aware live tenant loading, profile updates, local fallback persistence, product creation/editing/deletion, Arabic and English fields, price validation, availability and featured flags, preview links, product image validation/upload to the `menu-assets` bucket, and menu visit event insertion. QR preview and copy are implemented; the visible QR panel remains a text presentation until a QR image library or server endpoint is selected for PNG download.
 
 The included `supabase-schema.sql` is the production data model. It contains tenants, branches, categories, products, tenant memberships, branch hours, and menu analytics events. Row-level security is enabled, public menu reads are limited to active/available content, and dashboard writes are membership-scoped. The schema also seeds three clearly labeled demo tenants; it does not represent Oaza Coffee as a customer or partner.
 
@@ -24,9 +24,9 @@ The admin demo stores its edits in `localStorage` under `menuDemoDb`. This is us
 
 ## Supabase setup
 
-Create or select a Supabase project, run `supabase-schema.sql` in the SQL editor, and configure the public project URL plus publishable/anon key using the existing `supabase-config.example.js` pattern. Never commit a service-role key or any secret into this repository. A production build should move Supabase calls to a server-mediated or authenticated frontend integration and should keep tenant membership checks enforced by RLS rather than trusting a client-provided tenant ID.
+The current repository is configured against the existing Supabase project through `supabase-config.js`, using only the public publishable key. The production schema and seed migrations have been applied to that project. Never replace the client key with a service-role key or commit any secret. Supabase Auth credentials are entered only in the admin form; tenant membership is checked through RLS and `tenant_members`.
 
-Before first production launch, create an authenticated owner account, insert its UUID into `tenant_members` for the intended tenant with `owner` or `admin` role, create branch records, populate categories/products, and configure storage policies for product images. The current static demo intentionally avoids pretending that unauthenticated localStorage is secure.
+Before first production launch, create an authenticated owner account in Supabase Auth, insert its UUID into `tenant_members` for the intended tenant with `owner` or `admin` role, configure storage policies for the `menu-assets` bucket, and verify the public domain. The localStorage path remains only as a fallback when no live session or live tenant data is available; it is not an authorization boundary.
 
 ## Tenant and domain model
 
@@ -46,10 +46,10 @@ The visual direction is intentionally original: warm editorial neutrals, dark co
 
 ## Deployment
 
-The repository can be deployed as a static site to Vercel, Netlify, GitHub Pages, or any CDN that serves HTML/CSS/JavaScript. For a real SaaS, use a build/server layer that integrates Supabase Auth, database queries, storage uploads, tenant hostname resolution, server-side analytics inserts, and authenticated admin routes. Add custom response headers, HTTPS, cache policy, a real QR image generator, image optimization, and an error/404 route at that stage.
+The repository can be deployed as a static site to Vercel, Netlify, GitHub Pages, or any CDN that serves HTML/CSS/JavaScript. For Vercel, import the repository, keep the static root, and deploy; `404.html` and `robots.txt` are included. Configure a custom domain or rewrite branded hosts to the same app, then resolve tenant and branch from validated host/path parameters. Add production response headers, cache policy, a selected QR PNG generator, stricter Storage policies, and image transformation/CDN handling before broad commercial rollout.
 
 ## QA performed and remaining limitations
 
-Static JavaScript syntax was checked with Node, and both `index.html` and `admin.html` were served successfully by a local HTTP server during smoke testing. The project retains `*.before-production` snapshots of the original files for rollback/reference.
+Static JavaScript syntax was checked with Node. Public and admin HTML were served successfully by a local HTTP server, and Chromium headless DOM checks passed for live tenant routing plus admin rendering. The Supabase schema, seed data, branding/storage migration, and public project configuration were applied through the connected project.
 
-The remaining production work is intentional rather than hidden: Supabase is not connected in the static demo, admin authentication is not active locally, image upload/storage is not wired, the QR view is a labeled placeholder, analytics counters are demo values, and branch hours are represented in the schema but not yet rendered from live data. These steps require the owner’s Supabase project URL/key, Auth configuration, storage bucket/policies, domain/DNS settings, and a decision on the hosting/build pipeline.
+Remaining owner actions are limited to creating/authorizing real admin users, adding `tenant_members` rows, confirming Storage RLS policies, choosing a real QR PNG implementation, testing the live admin session in the owner’s browser, and configuring the final domain/DNS. Branch-hour rendering, full branch CRUD UI, category drag ordering, logo upload, and full analytics reporting are schema-ready but still require the next product iteration.
