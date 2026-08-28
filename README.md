@@ -110,3 +110,11 @@ The committed `supabase-config.js` contains a Supabase publishable/anon key inte
 Demo/local mode remains explicitly labeled in the admin page. LocalStorage changes are preview-only; authenticated users with a `tenant_members` row use the live Supabase path, and mutation controls are disabled until authentication. Production onboarding still requires creating the owner account and membership row before any live write can occur.
 
 The direct authenticated cross-tenant mutation scenarios require two real test accounts with memberships. The RLS policies are membership-scoped and were reviewed structurally, but those two scenarios should be rerun in a staging project with non-production credentials during owner onboarding; no test password or account was available to this session.
+
+## Final Auth tenant-isolation staging test
+
+A final live policy review corrected the authenticated branch, category, product, and analytics predicates so each compares `tenant_members.tenant_id` with the target row's qualified tenant ID. The Supabase security advisor returned `lints: []`. Anonymous base-table reads remain empty, public menu RPCs remain tenant/branch validated, direct analytics inserts remain denied, and invalid product analytics requests are rejected.
+
+A complete authenticated two-user staging test was not run because the available Supabase connector exposes database/project operations but no Auth-admin user creation operation, and no temporary credentials were supplied. No fake or production credentials were used. The full matrix and evidence are in [`final_auth_tenant_isolation_report.md`](final_auth_tenant_isolation_report.md).
+
+The `owner`, `admin`, and `editor` values currently exist as membership roles but are not differentiated by the RLS policies or admin UI; all authenticated members of a tenant receive the same tenant-scoped CRUD capability. Treat this as a launch decision: either implement least-privilege role checks before selling role-sensitive access, or explicitly operate the first onboarding with membership-only permissions.
